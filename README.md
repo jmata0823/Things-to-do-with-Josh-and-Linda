@@ -5,33 +5,32 @@ each with a Yelp/Google Maps link and a pin on an interactive map. Built with
 plain HTML/CSS/JS and [Leaflet](https://leafletjs.com/) + OpenStreetMap (free,
 no API key needed).
 
+- Restaurants show up as honeypot markers on the map; entertainment spots show up as bear markers.
+- Clicking "View on Google Maps" opens an embedded map right on the page. Clicking "View on Yelp" opens a modal with the place's info and a link out — Yelp doesn't allow other sites to embed its pages directly, so a full new-tab visit is unavoidable there.
+
 ## Files
 
-- `index.html` — page structure and tabs (All / Restaurants / Entertainment)
+- `index.html` — page structure, tabs, the "Add a place" form, and the modal markup
 - `style.css` — styling
-- `app.js` — renders the list, filters by category, draws map markers
-- `data.js` — **the list of places** — this is the only file you'll usually edit
-- `_serve.ps1` — optional local preview server (not needed for GitHub Pages)
+- `app.js` — renders the list/map, filters by category, runs the add-place form and modals
+- `data.js` — **the permanent list of places**
+- `_serve.ps1` — optional local preview server (not needed for GitHub Pages, not committed to the repo)
 
 ## Adding a place
 
-Open `data.js` and add an entry to the `PLACES` array:
+Click **+ Add a place** on the site itself. Fill in the name, category, address,
+description, and Yelp/Google links, then click **Find coordinates from address**
+to auto-fill latitude/longitude (or enter them manually — right-click a spot on
+Google Maps and click the coordinates shown at the top of the menu). Submitting
+the form:
 
-```js
-{
-  name: "Place Name",
-  category: "restaurants",   // or "entertainment"
-  address: "123 Main St, Las Vegas, NV",
-  lat: 36.1699,
-  lng: -115.1398,
-  description: "One or two sentences about it.",
-  yelpUrl: "https://www.yelp.com/biz/...",
-  googleUrl: "https://www.google.com/maps/place/..."
-}
-```
+- Shows the new place immediately on your map/list for this visit.
+- Gives you a ready-made code snippet to make it permanent.
 
-To get `lat`/`lng`: open the place in Google Maps, right-click its pin, and
-click the coordinates shown at the top of the menu to copy them.
+To publish it for both of you: paste that snippet into `data.js`'s `PLACES`
+array yourself and push, or just send the snippet to Claude in chat and ask
+it to add it — either way it becomes permanent and shows up for both of you
+once it's committed.
 
 ## Preview locally before publishing (optional)
 
@@ -45,28 +44,15 @@ powershell -File "_serve.ps1"
 Then open `http://localhost:5500/` in a browser. Press Ctrl+C in the terminal
 to stop it when done.
 
-## Publish to GitHub Pages (no git installation needed)
+## Publishing changes
 
-1. Go to [github.com](https://github.com) and sign in (create a free account if needed).
-2. Click **New repository**. Name it something like `things-to-do-with-josh-and-linda`,
-   set it to **Public**, and click **Create repository** (leave "Add a README" unchecked).
-3. On the new repo's page, click **uploading an existing file**.
-4. Drag in `index.html`, `style.css`, `app.js`, `data.js`, and `README.md` from
-   this folder (you can skip `_serve.ps1`, it's just a local preview helper).
-5. Scroll down and click **Commit changes**.
-6. Go to the repo's **Settings** tab → **Pages** (left sidebar).
-7. Under "Build and deployment", set **Source** to "Deploy from a branch",
-   **Branch** to `main` and folder to `/ (root)`, then **Save**.
-8. Wait about a minute, then refresh the Pages settings screen — it will show
-   your live URL: `https://<your-username>.github.io/things-to-do-with-josh-and-linda/`
+This repo is git-tracked. From the project folder:
 
-## Updating the site later
+```powershell
+git add -A
+git commit -m "Describe the change"
+git push
+```
 
-Edit `data.js` locally, then on GitHub go to the file, click the pencil (edit)
-icon, paste in the new contents, and commit. GitHub Pages redeploys automatically
-within a minute or two.
-
-If you'd rather use git properly later, install it from
-[git-scm.com](https://git-scm.com/download/win) and the GitHub CLI from
-[cli.github.com](https://cli.github.com/) — then `git clone` the repo and
-push changes from the command line instead of editing in the browser.
+The first push from a new machine will prompt a browser sign-in to authorize
+git to push on your behalf.

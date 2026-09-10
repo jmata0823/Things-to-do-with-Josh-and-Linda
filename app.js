@@ -6,10 +6,24 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 const listEl = document.getElementById("list");
-const tabButtons = document.querySelectorAll(".tab-btn");
+const tabButtons = document.querySelectorAll(".tab-btn[data-category]");
+const statusEl = document.getElementById("filter-status");
 
 let activeCategory = "all";
 let markers = [];
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isSafeUrl(url) {
+  return typeof url === "string" && /^https?:\/\//i.test(url.trim());
+}
 
 const pawIcon = `<svg width="12" height="12" viewBox="0 0 100 100" aria-hidden="true">
   <ellipse cx="50" cy="65" rx="26" ry="20" fill="currentColor"/>
@@ -39,11 +53,32 @@ function bearIcon() {
   });
 }
 
+function honeypotIcon() {
+  return L.divIcon({
+    className: "honeypot-marker",
+    html: `<svg viewBox="0 0 100 100" width="42" height="42" xmlns="http://www.w3.org/2000/svg">
+      <path d="M28 46 Q20 46 20 60 L20 80 Q20 92 50 92 Q80 92 80 80 L80 60 Q80 46 72 46 Z" fill="#e8a33d" stroke="#6b4423" stroke-width="4"/>
+      <rect x="20" y="61" width="60" height="11" fill="#6b4423"/>
+      <text x="50" y="70" font-family="Georgia, serif" font-size="11" font-weight="bold" fill="#f2d9b1" text-anchor="middle">honey</text>
+      <ellipse cx="50" cy="46" rx="24" ry="9" fill="#6b4423"/>
+      <ellipse cx="50" cy="43" rx="19" ry="7" fill="#a97c50"/>
+      <path d="M38 36 Q38 22 50 22 Q62 22 62 36 Q62 44 50 46 Q38 44 38 36 Z" fill="#e8a33d" stroke="#6b4423" stroke-width="3"/>
+    </svg>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 40],
+    popupAnchor: [0, -36]
+  });
+}
+
+function markerIcon(category) {
+  return category === "entertainment" ? bearIcon() : honeypotIcon();
+}
+
 function renderMarkers(places) {
   markers.forEach(m => map.removeLayer(m));
   markers = places.map(place => {
-    const marker = L.marker([place.lat, place.lng], { icon: bearIcon() }).addTo(map);
-    marker.bindPopup(`<strong>${place.name}</strong><br>${place.address}`);
+    const marker = L.marker([place.lat, place.lng], { icon: markerIcon(place.category) }).addTo(map);
+    marker.bindPopup(`<strong>${escapeHtml(place.name)}</strong><br>${escapeHtml(place.address)}`);
     marker.placeName = place.name;
     return marker;
   });
@@ -75,14 +110,14 @@ function renderList(places) {
     card.setAttribute("aria-label", `Show ${place.name} on the map`);
 
     const links = [];
-    if (place.yelpUrl) links.push(`<a href="${place.yelpUrl}" target="_blank" rel="noopener">View on Yelp</a>`);
-    if (place.googleUrl) links.push(`<a href="${place.googleUrl}" target="_blank" rel="noopener">View on Google Maps</a>`);
+    if (isSafeUrl(place.yelpUrl)) links.push(`<a href="${escapeHtml(place.yelpUrl)}" data-type="yelp" target="_blank" rel="noopener">View on Yelp</a>`);
+    if (isSafeUrl(place.googleUrl)) links.push(`<a href="${escapeHtml(place.googleUrl)}" data-type="google" target="_blank" rel="noopener">View on Google Maps</a>`);
 
     card.innerHTML = `
-      <span class="category-badge">${pawIcon}${place.category}</span>
-      <h3>${place.name}</h3>
-      <p class="address">${place.address}</p>
-      <p class="desc">${place.description || ""}</p>
+      <span class="category-badge">${pawIcon}${escapeHtml(place.category)}</span>
+      <h3>${escapeHtml(place.name)}</h3>
+      <p class="address">${escapeHtml(place.address)}</p>
+      <p class="desc">${escapeHtml(place.description || "")}</p>
       <div class="links">${links.join("")}</div>
     `;
 
@@ -101,13 +136,19 @@ function renderList(places) {
         selectPlace();
       }
     });
-    card.querySelectorAll(".links a").forEach(a => a.addEventListener("click", e => e.stopPropagation()));
+
+    card.querySelectorAll(".links a").forEach(a => {
+      a.addEventListener("click", e => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (a.dataset.type === "google") openMapModal(place);
+        else if (a.dataset.type === "yelp") openYelpModal(place);
+      });
+    });
 
     listEl.appendChild(card);
   });
 }
-
-const statusEl = document.getElementById("filter-status");
 
 function applyFilter() {
   const filtered = activeCategory === "all"
@@ -133,6 +174,173 @@ tabButtons.forEach(btn => {
     activeCategory = btn.dataset.category;
     applyFilter();
   });
+});
+
+/* ---------- Modal (in-page Yelp / Google Maps) ---------- */
+
+const modalOverlay = document.getElementById("modal-overlay");
+const modalBody = document.getElementById("modal-body");
+const modalClose = document.getElementById("modal-close");
+let lastFocused = null;
+
+function openModal(html) {
+  modalBody.innerHTML = html;
+  modalOverlay.hidden = false;
+  document.body.classList.add("modal-open");
+  lastFocused = document.activeElement;
+  modalClose.focus();
+}
+
+function closeModal() {
+  modalOverlay.hidden = true;
+  modalBody.innerHTML = "";
+  document.body.classList.remove("modal-open");
+  if (lastFocused && lastFocused.focus) lastFocused.focus();
+}
+
+modalClose.addEventListener("click", closeModal);
+modalOverlay.addEventListener("click", e => {
+  if (e.target === modalOverlay) closeModal();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !modalOverlay.hidden) closeModal();
+});
+
+function openMapModal(place) {
+  const fallbackUrl = `https://www.google.com/maps?q=${place.lat},${place.lng}`;
+  const externalUrl = isSafeUrl(place.googleUrl) ? place.googleUrl : fallbackUrl;
+  openModal(`
+    <h3 id="modal-title">${escapeHtml(place.name)}</h3>
+    <p class="modal-address">${escapeHtml(place.address)}</p>
+    <iframe class="map-embed" src="https://www.google.com/maps?q=${place.lat},${place.lng}&output=embed" loading="lazy" title="Map showing ${escapeHtml(place.name)}"></iframe>
+    <a class="modal-external" href="${escapeHtml(externalUrl)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+  `);
+}
+
+function openYelpModal(place) {
+  const yelpLink = isSafeUrl(place.yelpUrl)
+    ? `<a class="modal-external" href="${escapeHtml(place.yelpUrl)}" target="_blank" rel="noopener">Open on Yelp ↗</a>`
+    : "";
+  openModal(`
+    <h3 id="modal-title">${escapeHtml(place.name)}</h3>
+    <span class="category-badge">${pawIcon}${escapeHtml(place.category)}</span>
+    <p class="modal-address">${escapeHtml(place.address)}</p>
+    <p>${escapeHtml(place.description || "")}</p>
+    <p class="modal-note">Yelp doesn't allow other sites to show its pages directly — tap below for the full page with photos and reviews.</p>
+    ${yelpLink}
+  `);
+}
+
+/* ---------- Add a place ---------- */
+
+const addToggleBtn = document.getElementById("add-toggle-btn");
+const addPanel = document.getElementById("add-place-panel");
+const placeForm = document.getElementById("place-form");
+const lookupBtn = document.getElementById("lookup-btn");
+const lookupStatus = document.getElementById("lookup-status");
+const addResult = document.getElementById("add-result");
+const snippetOutput = document.getElementById("snippet-output");
+const copyBtn = document.getElementById("copy-btn");
+const copyStatus = document.getElementById("copy-status");
+
+addToggleBtn.addEventListener("click", () => {
+  const willOpen = addPanel.hidden;
+  addPanel.hidden = !willOpen;
+  addToggleBtn.setAttribute("aria-expanded", String(willOpen));
+  addToggleBtn.textContent = willOpen ? "− Close form" : "+ Add a place";
+  if (willOpen) document.getElementById("f-name").focus();
+});
+
+lookupBtn.addEventListener("click", async () => {
+  const address = placeForm.address.value.trim();
+  if (!address) {
+    lookupStatus.textContent = "Enter an address first.";
+    return;
+  }
+  lookupStatus.textContent = "Looking up…";
+  lookupBtn.disabled = true;
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(address)}`);
+    const data = await res.json();
+    if (data && data[0]) {
+      placeForm.lat.value = parseFloat(data[0].lat).toFixed(6);
+      placeForm.lng.value = parseFloat(data[0].lon).toFixed(6);
+      lookupStatus.textContent = `Found: ${data[0].display_name}`;
+    } else {
+      lookupStatus.textContent = "Couldn't find that address — enter coordinates manually (right-click the spot on Google Maps to copy them).";
+    }
+  } catch (err) {
+    lookupStatus.textContent = "Lookup failed — enter coordinates manually (right-click the spot on Google Maps to copy them).";
+  } finally {
+    lookupBtn.disabled = false;
+  }
+});
+
+function buildSnippet(place) {
+  return [
+    "  {",
+    `    name: ${JSON.stringify(place.name)},`,
+    `    category: ${JSON.stringify(place.category)},`,
+    `    address: ${JSON.stringify(place.address)},`,
+    `    lat: ${place.lat},`,
+    `    lng: ${place.lng},`,
+    `    description: ${JSON.stringify(place.description)},`,
+    `    yelpUrl: ${JSON.stringify(place.yelpUrl)},`,
+    `    googleUrl: ${JSON.stringify(place.googleUrl)}`,
+    "  },"
+  ].join("\n");
+}
+
+placeForm.addEventListener("submit", e => {
+  e.preventDefault();
+
+  const lat = parseFloat(placeForm.lat.value);
+  const lng = parseFloat(placeForm.lng.value);
+  if (!placeForm.name.value.trim() || !placeForm.address.value.trim() || Number.isNaN(lat) || Number.isNaN(lng)) {
+    lookupStatus.textContent = "Fill in name, address, and coordinates (use the lookup button, or enter them manually) before adding.";
+    return;
+  }
+
+  const newPlace = {
+    name: placeForm.name.value.trim(),
+    category: placeForm.category.value,
+    address: placeForm.address.value.trim(),
+    lat,
+    lng,
+    description: placeForm.description.value.trim(),
+    yelpUrl: placeForm.yelpUrl.value.trim(),
+    googleUrl: placeForm.googleUrl.value.trim()
+  };
+
+  PLACES.push(newPlace);
+  activeCategory = "all";
+  tabButtons.forEach(b => {
+    const isAll = b.dataset.category === "all";
+    b.classList.toggle("active", isAll);
+    b.setAttribute("aria-pressed", String(isAll));
+  });
+  applyFilter();
+
+  snippetOutput.value = buildSnippet(newPlace);
+  addResult.hidden = false;
+  copyStatus.textContent = "";
+  lookupStatus.textContent = "";
+  addResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  const category = newPlace.category;
+  placeForm.reset();
+  placeForm.category.value = category;
+});
+
+copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(snippetOutput.value);
+    copyStatus.textContent = "Copied! Paste it into data.js, or send it to Claude in chat.";
+  } catch (err) {
+    snippetOutput.focus();
+    snippetOutput.select();
+    copyStatus.textContent = "Couldn't auto-copy — text is selected, press Ctrl+C.";
+  }
 });
 
 applyFilter();

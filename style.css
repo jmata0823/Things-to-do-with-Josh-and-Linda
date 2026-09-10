@@ -265,7 +265,8 @@ main {
   border: 3px solid var(--bark-light);
 }
 
-.bear-marker svg {
+.bear-marker svg,
+.honeypot-marker svg {
   display: block;
 }
 
@@ -286,4 +287,224 @@ footer {
   height: 22px;
   display: block;
   margin: 0 auto 0.5rem;
+}
+
+/* ---------- Add a place ---------- */
+
+.add-place-panel {
+  max-width: 640px;
+  margin: 0 auto 1.5rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(107, 68, 35, 0.1);
+}
+
+.add-place-panel h2 {
+  margin: 0 0 0.4rem;
+  color: var(--accent-dark);
+  font-size: 1.4rem;
+}
+
+.add-place-intro {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+}
+
+.field-row label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--accent-dark);
+}
+
+.field-row input,
+.field-row select,
+.field-row textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.7rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 44px;
+}
+
+.field-row textarea {
+  min-height: 66px;
+  resize: vertical;
+}
+
+.coords-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 0.8rem;
+}
+
+.coords-row label {
+  grid-column: span 1;
+}
+
+.lookup-btn,
+.submit-btn {
+  border: 2px solid var(--bark);
+  border-radius: 12px;
+  padding: 0.6rem 1.1rem;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Fredoka", sans-serif;
+}
+
+.lookup-btn {
+  background: var(--card-bg);
+  color: var(--bark);
+  margin-bottom: 0.5rem;
+}
+
+.lookup-btn:hover {
+  background: var(--bg);
+}
+
+.submit-btn {
+  background: var(--honey);
+  color: var(--text);
+  border-color: var(--bark);
+  width: 100%;
+  margin-top: 0.4rem;
+  box-shadow: 0 3px 0 var(--bark);
+}
+
+.submit-btn:hover {
+  transform: translateY(-1px);
+}
+
+.lookup-status {
+  min-height: 1.1em;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+}
+
+.add-result {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+}
+
+.add-result h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  color: var(--accent-dark);
+}
+
+.add-result p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+#snippet-output {
+  width: 100%;
+  font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  font-size: 0.8rem;
+  padding: 0.7rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+/* ---------- Modal (Yelp / Google Maps in-page) ---------- */
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(47, 77, 58, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 100;
+}
+
+.modal-box {
+  position: relative;
+  background: var(--card-bg);
+  border: 3px solid var(--bark-light);
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 560px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--bark);
+  background: var(--card-bg);
+  color: var(--bark);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#modal-body h3 {
+  margin: 0 0.5rem 0.35rem 0;
+  color: var(--accent-dark);
+  padding-right: 2rem;
+}
+
+.modal-address {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.modal-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.75rem 0;
+}
+
+.modal-external {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: var(--bark);
+}
+
+.map-embed {
+  width: 100%;
+  height: 320px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
 }
