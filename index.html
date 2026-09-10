@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Things to do with Josh and Linda</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%23a97c50'/%3E%3Ccircle cx='20' cy='18' r='14' fill='%23a97c50'/%3E%3Ccircle cx='80' cy='18' r='14' fill='%23a97c50'/%3E%3Ccircle cx='20' cy='18' r='7' fill='%23f2d9b1'/%3E%3Ccircle cx='80' cy='18' r='7' fill='%23f2d9b1'/%3E%3Cellipse cx='50' cy='62' rx='22' ry='16' fill='%23f2d9b1'/%3E%3Cellipse cx='50' cy='54' rx='7' ry='5' fill='%233b2f27'/%3E%3Ccircle cx='36' cy='42' r='5' fill='%233b2f27'/%3E%3Ccircle cx='64' cy='42' r='5' fill='%233b2f27'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Quicksand:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Things to do with Josh and Linda</h1>
+    <p class="subtitle">Our running trail log of restaurants and things to do</p>
+  </div>
+
+  <div class="bear-peek" aria-hidden="true">
+    <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="120" width="200" height="40" rx="20" fill="#6b4423"/>
+      <circle cx="70" cy="120" r="18" fill="#a97c50"/>
+      <circle cx="130" cy="120" r="18" fill="#a97c50"/>
+      <circle cx="100" cy="80" r="55" fill="#a97c50"/>
+      <circle cx="58" cy="34" r="18" fill="#a97c50"/>
+      <circle cx="142" cy="34" r="18" fill="#a97c50"/>
+      <circle cx="58" cy="34" r="9" fill="#f2d9b1"/>
+      <circle cx="142" cy="34" r="9" fill="#f2d9b1"/>
+      <ellipse cx="100" cy="96" rx="30" ry="22" fill="#f2d9b1"/>
+      <ellipse cx="100" cy="86" rx="9" ry="6" fill="#3b2f27"/>
+      <path d="M100 92 Q100 101 90 101" stroke="#3b2f27" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M100 92 Q100 101 110 101" stroke="#3b2f27" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="80" cy="70" r="5" fill="#3b2f27"/>
+      <circle cx="120" cy="70" r="5" fill="#3b2f27"/>
+      <circle cx="64" cy="92" r="10" fill="#f7b6a3" opacity="0.55"/>
+      <circle cx="136" cy="92" r="10" fill="#f7b6a3" opacity="0.55"/>
+    </svg>
+  </div>
+
+  <svg class="treeline" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="pine" width="100" height="100" patternUnits="userSpaceOnUse">
+        <polygon points="50,8 20,60 80,60" fill="#2f4d3a"/>
+        <polygon points="50,28 15,78 85,78" fill="#3a5f45"/>
+        <rect x="45" y="76" width="10" height="16" fill="#5a3a24"/>
+      </pattern>
+    </defs>
+    <rect width="1200" height="100" fill="url(#pine)"/>
+  </svg>
+</header>
+
+<nav class="tabs" role="group" aria-label="Filter places by category">
+  <button class="tab-btn active" data-category="all" aria-pressed="true">All</button>
+  <button class="tab-btn" data-category="restaurants" aria-pressed="false">Restaurants</button>
+  <button class="tab-btn" data-category="entertainment" aria-pressed="false">Entertainment</button>
+</nav>
+<p id="filter-status" class="visually-hidden" aria-live="polite"></p>
+
+<main>
+  <section id="list" class="list" aria-label="Place list"></section>
+  <section id="map" aria-label="Map of places"></section>
+</main>
+
+<footer>
+  <svg class="paw-divider" viewBox="0 0 400 30" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <g fill="#6b4423" opacity="0.5">
+      <ellipse cx="40" cy="18" rx="8" ry="6"/>
+      <circle cx="31" cy="8" r="3"/><circle cx="38" cy="5" r="3"/><circle cx="45" cy="5" r="3"/><circle cx="52" cy="8" r="3"/>
+      <ellipse cx="140" cy="14" rx="8" ry="6"/>
+      <circle cx="131" cy="4" r="3"/><circle cx="138" cy="1" r="3"/><circle cx="145" cy="1" r="3"/><circle cx="152" cy="4" r="3"/>
+      <ellipse cx="240" cy="18" rx="8" ry="6"/>
+      <circle cx="231" cy="8" r="3"/><circle cx="238" cy="5" r="3"/><circle cx="245" cy="5" r="3"/><circle cx="252" cy="8" r="3"/>
+      <ellipse cx="340" cy="14" rx="8" ry="6"/>
+      <circle cx="331" cy="4" r="3"/><circle cx="338" cy="1" r="3"/><circle cx="345" cy="1" r="3"/><circle cx="352" cy="4" r="3"/>
+    </g>
+  </svg>
+  <p>Happy trails, always up for an adventure together.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
