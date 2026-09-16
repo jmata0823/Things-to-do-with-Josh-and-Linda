@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /places/{placeId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasAll(['name', 'category', 'address', 'lat', 'lng'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+        && request.resource.data.category in ['restaurants', 'entertainment']
+        && request.resource.data.address is string
+        && request.resource.data.address.size() < 300
+        && request.resource.data.lat is number && request.resource.data.lat > -90 && request.resource.data.lat < 90
+        && request.resource.data.lng is number && request.resource.data.lng > -180 && request.resource.data.lng < 180;
+
+      allow update, delete: if false;
+    }
+  }
+}

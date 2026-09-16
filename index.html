@@ -10,6 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Quicksand:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -62,7 +64,7 @@
 
 <section id="add-place-panel" class="add-place-panel" hidden>
   <h2>Add a place</h2>
-  <p class="add-place-intro">Fill this in, then send the snippet it gives you to Claude in chat (or paste it into <code>data.js</code> yourself) to publish it for both of you.</p>
+  <p class="add-place-intro">Fill this in and it saves permanently for both of you — no extra steps.</p>
 
   <form id="place-form" novalidate>
     <div class="field-row">
@@ -112,11 +114,8 @@
   </form>
 
   <div id="add-result" class="add-result" hidden>
-    <h3>Added to your map for this visit</h3>
-    <p>Copy this and send it to Claude (or paste it into <code>data.js</code>) to make it stick around for everyone:</p>
-    <textarea id="snippet-output" readonly rows="10"></textarea>
-    <button type="button" id="copy-btn" class="lookup-btn">Copy snippet</button>
-    <p id="copy-status" class="lookup-status" aria-live="polite"></p>
+    <h3 id="add-result-title">Saved!</h3>
+    <p id="add-result-text">It's on the map now, permanently, for both of you.</p>
   </div>
 </section>
 
@@ -150,6 +149,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="data.js"></script>
+<script src="firebase-config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

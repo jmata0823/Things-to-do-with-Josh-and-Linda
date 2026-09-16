@@ -11,6 +11,11 @@ const statusEl = document.getElementById("filter-status");
 
 let activeCategory = "all";
 let markers = [];
+let communityPlaces = [];
+
+function getAllPlaces() {
+  return [...PLACES, ...communityPlaces];
+}
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -151,9 +156,10 @@ function renderList(places) {
 }
 
 function applyFilter() {
+  const allPlaces = getAllPlaces();
   const filtered = activeCategory === "all"
-    ? PLACES
-    : PLACES.filter(p => p.category === activeCategory);
+    ? allPlaces
+    : allPlaces.filter(p => p.category === activeCategory);
   renderList(filtered);
   renderMarkers(filtered);
 
@@ -175,6 +181,32 @@ tabButtons.forEach(btn => {
     applyFilter();
   });
 });
+
+/* ---------- Firestore (shared, permanent additions) ---------- */
+
+function subscribeToPlaces(attempt) {
+  db.collection("places").orderBy("createdAt", "asc").onSnapshot(
+    snapshot => {
+      communityPlaces = snapshot.docs.map(doc => doc.data());
+      applyFilter();
+    },
+    err => {
+      // Firestore's client can throw a spurious permission-denied on the
+      // first request(s) right after page load, before its internal session
+      // is fully warmed up — retrying with backoff clears it without any
+      // real rules issue (confirmed: identical queries succeed moments later).
+      if (attempt < 6) {
+        setTimeout(() => subscribeToPlaces(attempt + 1), 500 * (attempt + 1));
+      } else {
+        console.error("Couldn't load shared places from Firestore:", err);
+      }
+    }
+  );
+}
+
+if (typeof db !== "undefined") {
+  subscribeToPlaces(0);
+}
 
 /* ---------- Modal (in-page Yelp / Google Maps) ---------- */
 
@@ -239,9 +271,8 @@ const placeForm = document.getElementById("place-form");
 const lookupBtn = document.getElementById("lookup-btn");
 const lookupStatus = document.getElementById("lookup-status");
 const addResult = document.getElementById("add-result");
-const snippetOutput = document.getElementById("snippet-output");
-const copyBtn = document.getElementById("copy-btn");
-const copyStatus = document.getElementById("copy-status");
+const addResultText = document.getElementById("add-result-text");
+const submitBtn = placeForm.querySelector(".submit-btn");
 
 addToggleBtn.addEventListener("click", () => {
   const willOpen = addPanel.hidden;
@@ -276,28 +307,18 @@ lookupBtn.addEventListener("click", async () => {
   }
 });
 
-function buildSnippet(place) {
-  return [
-    "  {",
-    `    name: ${JSON.stringify(place.name)},`,
-    `    category: ${JSON.stringify(place.category)},`,
-    `    address: ${JSON.stringify(place.address)},`,
-    `    lat: ${place.lat},`,
-    `    lng: ${place.lng},`,
-    `    description: ${JSON.stringify(place.description)},`,
-    `    yelpUrl: ${JSON.stringify(place.yelpUrl)},`,
-    `    googleUrl: ${JSON.stringify(place.googleUrl)}`,
-    "  },"
-  ].join("\n");
-}
-
-placeForm.addEventListener("submit", e => {
+placeForm.addEventListener("submit", async e => {
   e.preventDefault();
 
   const lat = parseFloat(placeForm.lat.value);
   const lng = parseFloat(placeForm.lng.value);
   if (!placeForm.name.value.trim() || !placeForm.address.value.trim() || Number.isNaN(lat) || Number.isNaN(lng)) {
     lookupStatus.textContent = "Fill in name, address, and coordinates (use the lookup button, or enter them manually) before adding.";
+    return;
+  }
+
+  if (typeof db === "undefined") {
+    lookupStatus.textContent = "Couldn't save — the shared database isn't available right now.";
     return;
   }
 
@@ -312,34 +333,35 @@ placeForm.addEventListener("submit", e => {
     googleUrl: placeForm.googleUrl.value.trim()
   };
 
-  PLACES.push(newPlace);
-  activeCategory = "all";
-  tabButtons.forEach(b => {
-    const isAll = b.dataset.category === "all";
-    b.classList.toggle("active", isAll);
-    b.setAttribute("aria-pressed", String(isAll));
-  });
-  applyFilter();
+  submitBtn.disabled = true;
+  lookupStatus.textContent = "Saving…";
 
-  snippetOutput.value = buildSnippet(newPlace);
-  addResult.hidden = false;
-  copyStatus.textContent = "";
-  lookupStatus.textContent = "";
-  addResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
-  const category = newPlace.category;
-  placeForm.reset();
-  placeForm.category.value = category;
-});
-
-copyBtn.addEventListener("click", async () => {
   try {
-    await navigator.clipboard.writeText(snippetOutput.value);
-    copyStatus.textContent = "Copied! Paste it into data.js, or send it to Claude in chat.";
+    await db.collection("places").add({
+      ...newPlace,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    activeCategory = "all";
+    tabButtons.forEach(b => {
+      const isAll = b.dataset.category === "all";
+      b.classList.toggle("active", isAll);
+      b.setAttribute("aria-pressed", String(isAll));
+    });
+
+    addResultText.textContent = `${newPlace.name} is on the map now, permanently, for both of you.`;
+    addResult.hidden = false;
+    lookupStatus.textContent = "";
+    addResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    const category = newPlace.category;
+    placeForm.reset();
+    placeForm.category.value = category;
   } catch (err) {
-    snippetOutput.focus();
-    snippetOutput.select();
-    copyStatus.textContent = "Couldn't auto-copy — text is selected, press Ctrl+C.";
+    console.error("Failed to save place:", err);
+    lookupStatus.textContent = "Couldn't save that — check your connection and try again.";
+  } finally {
+    submitBtn.disabled = false;
   }
 });
 

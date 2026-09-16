@@ -13,7 +13,8 @@ no API key needed).
 - `index.html` — page structure, tabs, the "Add a place" form, and the modal markup
 - `style.css` — styling
 - `app.js` — renders the list/map, filters by category, runs the add-place form and modals
-- `data.js` — **the permanent list of places**
+- `data.js` — the original curated list of places (edited by hand + git, same as always)
+- `firebase-config.js` — public Firebase project config (not secret — see "Shared database" below)
 - `_serve.ps1` — optional local preview server (not needed for GitHub Pages, not committed to the repo)
 
 ## Adding a place
@@ -22,15 +23,20 @@ Click **+ Add a place** on the site itself. Fill in the name, category, address,
 description, and Yelp/Google links, then click **Find coordinates from address**
 to auto-fill latitude/longitude (or enter them manually — right-click a spot on
 Google Maps and click the coordinates shown at the top of the menu). Submitting
-the form:
+the form saves it permanently and immediately — it shows up for both of you,
+on any device, with no extra steps.
 
-- Shows the new place immediately on your map/list for this visit.
-- Gives you a ready-made code snippet to make it permanent.
+## Shared database (Firestore)
 
-To publish it for both of you: paste that snippet into `data.js`'s `PLACES`
-array yourself and push, or just send the snippet to Claude in chat and ask
-it to add it — either way it becomes permanent and shows up for both of you
-once it's committed.
+Places added through the form are stored in a free Firebase/Firestore
+database (project `linda-and-joshua`), separate from the hand-curated list in
+`data.js`. The site loads both and shows them together. `firebase-config.js`
+holds the project's public config — these values identify the project but
+don't grant access on their own; access is controlled by the security rules
+set in the Firebase console (Firestore Database → Rules), which allow anyone
+to read the list and add a well-formed entry, but not edit or delete existing
+ones. To remove a bad/duplicate entry, delete it directly in the Firebase
+console (Firestore Database → Data tab).
 
 ## Preview locally before publishing (optional)
 
