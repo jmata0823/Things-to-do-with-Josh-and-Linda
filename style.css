@@ -465,7 +465,10 @@ body.modal-open {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  z-index: 100;
+  /* Leaflet assigns its own panes/controls z-index values up to 1000;
+     this has to clear that or the map's zoom controls/popups render
+     on top of the modal instead of underneath it. */
+  z-index: 2000;
 }
 
 .modal-box {
