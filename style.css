@@ -132,6 +132,7 @@ header h1 {
 
 .tab-btn:nth-child(2) { transform: rotate(-1.5deg); }
 .tab-btn:nth-child(3) { transform: rotate(1.5deg); }
+.tab-btn:nth-child(4) { transform: rotate(-1.5deg); }
 
 .tab-btn:hover {
   transform: translateY(-2px) rotate(0deg);
@@ -266,8 +267,29 @@ main {
 }
 
 .bear-marker svg,
-.honeypot-marker svg {
+.honeypot-marker svg,
+.mug-marker svg {
   display: block;
+}
+
+.visited-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+
+.visited-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .leaflet-popup-content-wrapper {

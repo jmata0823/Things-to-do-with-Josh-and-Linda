@@ -12,9 +12,15 @@ const statusEl = document.getElementById("filter-status");
 let activeCategory = "all";
 let markers = [];
 let communityPlaces = [];
+let visitedIds = new Set();
+
+function slugify(str) {
+  return String(str).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
 
 function getAllPlaces() {
-  return [...PLACES, ...communityPlaces];
+  const seed = PLACES.map(p => ({ ...p, id: p.id || slugify(p.name) }));
+  return [...seed, ...communityPlaces];
 }
 
 function escapeHtml(str) {
@@ -38,7 +44,13 @@ const pawIcon = `<svg width="12" height="12" viewBox="0 0 100 100" aria-hidden="
   <circle cx="88" cy="30" r="12" fill="currentColor"/>
 </svg>`;
 
-function bearIcon() {
+function checkBadge(visited) {
+  if (!visited) return "";
+  return `<circle cx="82" cy="18" r="17" fill="#4d7c53" stroke="#fff8ea" stroke-width="3"/>
+    <path d="M73 18 L79 25 L91 10" stroke="#fff8ea" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+function bearIcon(visited) {
   return L.divIcon({
     className: "bear-marker",
     html: `<svg viewBox="0 0 100 100" width="42" height="42" xmlns="http://www.w3.org/2000/svg">
@@ -51,6 +63,7 @@ function bearIcon() {
       <ellipse cx="50" cy="53" rx="6.5" ry="4.5" fill="#3b2f27"/>
       <circle cx="37" cy="42" r="4.5" fill="#3b2f27"/>
       <circle cx="63" cy="42" r="4.5" fill="#3b2f27"/>
+      ${checkBadge(visited)}
     </svg>`,
     iconSize: [42, 42],
     iconAnchor: [21, 40],
@@ -58,7 +71,7 @@ function bearIcon() {
   });
 }
 
-function honeypotIcon() {
+function honeypotIcon(visited) {
   return L.divIcon({
     className: "honeypot-marker",
     html: `<svg viewBox="0 0 100 100" width="42" height="42" xmlns="http://www.w3.org/2000/svg">
@@ -68,6 +81,7 @@ function honeypotIcon() {
       <ellipse cx="50" cy="46" rx="24" ry="9" fill="#6b4423"/>
       <ellipse cx="50" cy="43" rx="19" ry="7" fill="#a97c50"/>
       <path d="M38 36 Q38 22 50 22 Q62 22 62 36 Q62 44 50 46 Q38 44 38 36 Z" fill="#e8a33d" stroke="#6b4423" stroke-width="3"/>
+      ${checkBadge(visited)}
     </svg>`,
     iconSize: [42, 42],
     iconAnchor: [21, 40],
@@ -75,14 +89,34 @@ function honeypotIcon() {
   });
 }
 
-function markerIcon(category) {
-  return category === "entertainment" ? bearIcon() : honeypotIcon();
+function mugIcon(visited) {
+  return L.divIcon({
+    className: "mug-marker",
+    html: `<svg viewBox="0 0 100 100" width="42" height="42" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 12 Q50 6 44 8 Q40 10 42 16 L46 30" stroke="#a97c50" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M58 12 Q58 6 52 8 Q48 10 50 16 L54 30" stroke="#a97c50" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <rect x="22" y="32" width="56" height="46" rx="8" fill="#f2d9b1" stroke="#6b4423" stroke-width="4"/>
+      <path d="M78 40 h8 a10 10 0 0 1 0 24 h-8 Z" fill="#f2d9b1" stroke="#6b4423" stroke-width="4"/>
+      <path d="M28 32 Q50 46 72 32" fill="#6b4423"/>
+      ${checkBadge(visited)}
+    </svg>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 40],
+    popupAnchor: [0, -36]
+  });
+}
+
+function markerIcon(category, visited) {
+  if (category === "entertainment") return bearIcon(visited);
+  if (category === "cafes") return mugIcon(visited);
+  return honeypotIcon(visited);
 }
 
 function renderMarkers(places) {
   markers.forEach(m => map.removeLayer(m));
   markers = places.map(place => {
-    const marker = L.marker([place.lat, place.lng], { icon: markerIcon(place.category) }).addTo(map);
+    const visited = visitedIds.has(place.id);
+    const marker = L.marker([place.lat, place.lng], { icon: markerIcon(place.category, visited) }).addTo(map);
     marker.bindPopup(`<strong>${escapeHtml(place.name)}</strong><br>${escapeHtml(place.address)}`);
     marker.placeName = place.name;
     return marker;
@@ -118,12 +152,18 @@ function renderList(places) {
     if (isSafeUrl(place.yelpUrl)) links.push(`<a href="${escapeHtml(place.yelpUrl)}" data-type="yelp" target="_blank" rel="noopener">View on Yelp</a>`);
     if (isSafeUrl(place.googleUrl)) links.push(`<a href="${escapeHtml(place.googleUrl)}" data-type="google" target="_blank" rel="noopener">View on Google Maps</a>`);
 
+    const visited = visitedIds.has(place.id);
+
     card.innerHTML = `
       <span class="category-badge">${pawIcon}${escapeHtml(place.category)}</span>
       <h3>${escapeHtml(place.name)}</h3>
       <p class="address">${escapeHtml(place.address)}</p>
       <p class="desc">${escapeHtml(place.description || "")}</p>
       <div class="links">${links.join("")}</div>
+      <label class="visited-toggle">
+        <input type="checkbox" class="visited-checkbox" data-id="${escapeHtml(place.id)}" ${visited ? "checked" : ""}>
+        We've been here
+      </label>
     `;
 
     const selectPlace = () => {
@@ -150,6 +190,11 @@ function renderList(places) {
         else if (a.dataset.type === "yelp") openYelpModal(place);
       });
     });
+
+    const visitedLabel = card.querySelector(".visited-toggle");
+    visitedLabel.addEventListener("click", e => e.stopPropagation());
+    const visitedCheckbox = card.querySelector(".visited-checkbox");
+    visitedCheckbox.addEventListener("change", () => setVisited(place.id, visitedCheckbox.checked));
 
     listEl.appendChild(card);
   });
@@ -184,28 +229,50 @@ tabButtons.forEach(btn => {
 
 /* ---------- Firestore (shared, permanent additions) ---------- */
 
-function subscribeToPlaces(attempt) {
-  db.collection("places").orderBy("createdAt", "asc").onSnapshot(
-    snapshot => {
-      communityPlaces = snapshot.docs.map(doc => doc.data());
-      applyFilter();
-    },
-    err => {
-      // Firestore's client can throw a spurious permission-denied on the
-      // first request(s) right after page load, before its internal session
-      // is fully warmed up — retrying with backoff clears it without any
-      // real rules issue (confirmed: identical queries succeed moments later).
-      if (attempt < 6) {
-        setTimeout(() => subscribeToPlaces(attempt + 1), 500 * (attempt + 1));
-      } else {
-        console.error("Couldn't load shared places from Firestore:", err);
-      }
+// Firestore's client can throw a spurious permission-denied on the first
+// request(s) right after page load, before its internal session is fully
+// warmed up — retrying with backoff clears it without any real rules issue
+// (confirmed: identical queries succeed moments later).
+function subscribeWithRetry(label, subscribe, attempt) {
+  subscribe(err => {
+    if (attempt < 6) {
+      setTimeout(() => subscribeWithRetry(label, subscribe, attempt + 1), 500 * (attempt + 1));
+    } else {
+      console.error(`Couldn't load ${label} from Firestore:`, err);
     }
-  );
+  });
+}
+
+function setVisited(id, visited) {
+  if (typeof db === "undefined" || !id) return;
+  db.collection("visited").doc(id).set({
+    visited,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(err => console.error("Couldn't save visited status:", err));
 }
 
 if (typeof db !== "undefined") {
-  subscribeToPlaces(0);
+  subscribeWithRetry("shared places", onError => {
+    db.collection("places").orderBy("createdAt", "asc").onSnapshot(
+      snapshot => {
+        communityPlaces = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        applyFilter();
+      },
+      onError
+    );
+  }, 0);
+
+  subscribeWithRetry("visited status", onError => {
+    db.collection("visited").onSnapshot(
+      snapshot => {
+        visitedIds = new Set(
+          snapshot.docs.filter(doc => doc.data().visited).map(doc => doc.id)
+        );
+        applyFilter();
+      },
+      onError
+    );
+  }, 0);
 }
 
 /* ---------- Modal (in-page Yelp / Google Maps) ---------- */
