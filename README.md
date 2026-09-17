@@ -63,3 +63,10 @@ git push
 
 The first push from a new machine will prompt a browser sign-in to authorize
 git to push on your behalf.
+
+GitHub Pages' CDN can keep serving a cached, older copy of `style.css`/`app.js`/
+`data.js` for a few minutes after a push, even past a hard refresh. To make
+sure changes to those files show up immediately, bump the `?v=` query string
+on their `<script>`/`<link>` tags in `index.html` (e.g. `style.css?v=20260917a`
+→ `style.css?v=20260917b`) whenever you edit one of them — that forces
+browsers and GitHub's CDN to treat it as a brand-new file.
