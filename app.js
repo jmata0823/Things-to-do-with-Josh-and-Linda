@@ -149,7 +149,6 @@ function renderList(places) {
     card.setAttribute("aria-label", `Show ${place.name} on the map`);
 
     const links = [];
-    if (isSafeUrl(place.yelpUrl)) links.push(`<a href="${escapeHtml(place.yelpUrl)}" data-type="yelp" target="_blank" rel="noopener">View on Yelp</a>`);
     if (isSafeUrl(place.googleUrl)) links.push(`<a href="${escapeHtml(place.googleUrl)}" data-type="google" target="_blank" rel="noopener">View on Google Maps</a>`);
 
     const visited = visitedIds.has(place.id);
@@ -187,7 +186,6 @@ function renderList(places) {
         e.stopPropagation();
         e.preventDefault();
         if (a.dataset.type === "google") openMapModal(place);
-        else if (a.dataset.type === "yelp") openYelpModal(place);
       });
     });
 
@@ -316,20 +314,6 @@ function openMapModal(place) {
   `);
 }
 
-function openYelpModal(place) {
-  const yelpLink = isSafeUrl(place.yelpUrl)
-    ? `<a class="modal-external" href="${escapeHtml(place.yelpUrl)}" target="_blank" rel="noopener">Open on Yelp ↗</a>`
-    : "";
-  openModal(`
-    <h3 id="modal-title">${escapeHtml(place.name)}</h3>
-    <span class="category-badge">${pawIcon}${escapeHtml(place.category)}</span>
-    <p class="modal-address">${escapeHtml(place.address)}</p>
-    <p>${escapeHtml(place.description || "")}</p>
-    <p class="modal-note">Yelp doesn't allow other sites to show its pages directly — tap below for the full page with photos and reviews.</p>
-    ${yelpLink}
-  `);
-}
-
 /* ---------- Add a place ---------- */
 
 const addToggleBtn = document.getElementById("add-toggle-btn");
@@ -349,6 +333,20 @@ addToggleBtn.addEventListener("click", () => {
   if (willOpen) document.getElementById("f-name").focus();
 });
 
+function stripUnit(address) {
+  return address
+    .replace(/,?\s*\b(ste|suite|unit|apt|apartment|fl|floor|bldg|building|#)\.?\s*#?\s*[\w-]+\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+,/g, ",")
+    .trim();
+}
+
+async function geocode(address) {
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(address)}`);
+  const data = await res.json();
+  return data && data[0] ? data[0] : null;
+}
+
 lookupBtn.addEventListener("click", async () => {
   const address = placeForm.address.value.trim();
   if (!address) {
@@ -358,12 +356,18 @@ lookupBtn.addEventListener("click", async () => {
   lookupStatus.textContent = "Looking up…";
   lookupBtn.disabled = true;
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(address)}`);
-    const data = await res.json();
-    if (data && data[0]) {
-      placeForm.lat.value = parseFloat(data[0].lat).toFixed(6);
-      placeForm.lng.value = parseFloat(data[0].lon).toFixed(6);
-      lookupStatus.textContent = `Found: ${data[0].display_name}`;
+    let result = await geocode(address);
+
+    // Suite/unit numbers often trip up the geocoder — retry without one.
+    const simplified = stripUnit(address);
+    if (!result && simplified !== address) {
+      result = await geocode(simplified);
+    }
+
+    if (result) {
+      placeForm.lat.value = parseFloat(result.lat).toFixed(6);
+      placeForm.lng.value = parseFloat(result.lon).toFixed(6);
+      lookupStatus.textContent = `Found: ${result.display_name}`;
     } else {
       lookupStatus.textContent = "Couldn't find that address — enter coordinates manually (right-click the spot on Google Maps to copy them).";
     }
@@ -396,7 +400,6 @@ placeForm.addEventListener("submit", async e => {
     lat,
     lng,
     description: placeForm.description.value.trim(),
-    yelpUrl: placeForm.yelpUrl.value.trim(),
     googleUrl: placeForm.googleUrl.value.trim()
   };
 

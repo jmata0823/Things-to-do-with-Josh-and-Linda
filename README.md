@@ -1,12 +1,13 @@
 # Things to do with Josh and Linda
 
-A simple static website: a running list of restaurants and entertainment spots,
-each with a Yelp/Google Maps link and a pin on an interactive map. Built with
+A simple static website: a running list of restaurants, cafes, and entertainment
+spots, each with a Google Maps link and a pin on an interactive map. Built with
 plain HTML/CSS/JS and [Leaflet](https://leafletjs.com/) + OpenStreetMap (free,
 no API key needed).
 
-- Restaurants show up as honeypot markers on the map; entertainment spots show up as bear markers.
-- Clicking "View on Google Maps" opens an embedded map right on the page. Clicking "View on Yelp" opens a modal with the place's info and a link out — Yelp doesn't allow other sites to embed its pages directly, so a full new-tab visit is unavoidable there.
+- Restaurants show up as honeypot markers on the map; cafes show up as mug markers; entertainment spots show up as bear markers.
+- Clicking "View on Google Maps" opens an embedded map right on the page, no new tab.
+- Checking "We've been here" on a place marks it visited (permanently, shared) and adds a checkmark badge to its map icon.
 
 ## Files
 
@@ -20,7 +21,7 @@ no API key needed).
 ## Adding a place
 
 Click **+ Add a place** on the site itself. Fill in the name, category, address,
-description, and Yelp/Google links, then click **Find coordinates from address**
+description, and Google Maps link, then click **Find coordinates from address**
 to auto-fill latitude/longitude (or enter them manually — right-click a spot on
 Google Maps and click the coordinates shown at the top of the menu). Submitting
 the form saves it permanently and immediately — it shows up for both of you,
