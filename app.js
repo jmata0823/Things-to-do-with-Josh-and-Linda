@@ -18,6 +18,16 @@ function slugify(str) {
   return String(str).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+const CATEGORY_LABELS = {
+  restaurants: "Restaurants",
+  cafes: "Cafes",
+  entertainment: "Entertainment/Bars"
+};
+
+function categoryLabel(category) {
+  return CATEGORY_LABELS[category] || category;
+}
+
 function getAllPlaces() {
   const seed = PLACES.map(p => ({ ...p, id: p.id || slugify(p.name) }));
   return [...seed, ...communityPlaces];
@@ -154,7 +164,7 @@ function renderList(places) {
     const visited = visitedIds.has(place.id);
 
     card.innerHTML = `
-      <span class="category-badge">${pawIcon}${escapeHtml(place.category)}</span>
+      <span class="category-badge">${pawIcon}${escapeHtml(categoryLabel(place.category))}</span>
       <h3>${escapeHtml(place.name)}</h3>
       <p class="address">${escapeHtml(place.address)}</p>
       <p class="desc">${escapeHtml(place.description || "")}</p>
@@ -207,7 +217,7 @@ function applyFilter() {
   renderMarkers(filtered);
 
   if (statusEl) {
-    const label = activeCategory === "all" ? "places" : activeCategory;
+    const label = activeCategory === "all" ? "places" : categoryLabel(activeCategory);
     statusEl.textContent = `Showing ${filtered.length} ${label}`;
   }
 }
