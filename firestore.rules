@@ -4,16 +4,25 @@ service cloud.firestore {
     match /places/{placeId} {
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasAll(['name', 'category', 'address', 'lat', 'lng'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
-        && request.resource.data.category in ['restaurants', 'cafes', 'entertainment']
-        && request.resource.data.address is string
-        && request.resource.data.address.size() < 300
-        && request.resource.data.lat is number && request.resource.data.lat > -90 && request.resource.data.lat < 90
-        && request.resource.data.lng is number && request.resource.data.lng > -180 && request.resource.data.lng < 180;
+      function isWellFormed() {
+        return request.resource.data.keys().hasAll(['name', 'category', 'address', 'lat', 'lng'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+          && request.resource.data.category in ['restaurants', 'cafes', 'entertainment']
+          && request.resource.data.address is string
+          && request.resource.data.address.size() < 300
+          && request.resource.data.lat is number && request.resource.data.lat > -90 && request.resource.data.lat < 90
+          && request.resource.data.lng is number && request.resource.data.lng > -180 && request.resource.data.lng < 180;
+      }
 
-      allow update, delete: if false;
+      allow create: if isWellFormed();
+
+      // Edits are allowed (so "Edit" on the site works), but the original
+      // createdAt can't be changed, so ordering stays stable.
+      allow update: if isWellFormed()
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if true;
     }
 
     // Tracks whether a place has been visited. Low-stakes, so writes are

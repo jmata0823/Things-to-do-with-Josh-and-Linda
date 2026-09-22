@@ -27,6 +27,17 @@ Google Maps and click the coordinates shown at the top of the menu). Submitting
 the form saves it permanently and immediately — it shows up for both of you,
 on any device, with no extra steps.
 
+## Editing or deleting a place
+
+Places added through the form (anything with **Edit**/**Delete** links under
+its Google Maps link) can be edited or deleted right on the site — click
+**Edit** to reopen the form pre-filled with its details, or **Delete** to
+remove it (asks for confirmation first; this can't be undone).
+
+The two original curated places (Lotus of Siam, Fremont Street Experience)
+live in `data.js` instead, so they don't show Edit/Delete — ask in chat to
+change those, or edit `data.js` directly and push.
+
 ## Shared database (Firestore)
 
 Places added through the form are stored in a free Firebase/Firestore
@@ -35,9 +46,9 @@ database (project `linda-and-joshua`), separate from the hand-curated list in
 holds the project's public config — these values identify the project but
 don't grant access on their own; access is controlled by the security rules
 set in the Firebase console (Firestore Database → Rules), which allow anyone
-to read the list and add a well-formed entry, but not edit or delete existing
-ones. To remove a bad/duplicate entry, delete it directly in the Firebase
-console (Firestore Database → Data tab).
+to read the list and to add, edit, or delete an entry as long as it's
+well-formed (there's no login system, so this trust model only makes sense
+for a small shared list like this one).
 
 ## Preview locally before publishing (optional)
 

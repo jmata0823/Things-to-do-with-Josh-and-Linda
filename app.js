@@ -160,6 +160,10 @@ function renderList(places) {
 
     const links = [];
     if (isSafeUrl(place.googleUrl)) links.push(`<a href="${escapeHtml(place.googleUrl)}" data-type="google" target="_blank" rel="noopener">View on Google Maps</a>`);
+    if (place.source === "firestore") {
+      links.push(`<button type="button" class="edit-btn">Edit</button>`);
+      links.push(`<button type="button" class="delete-btn">Delete</button>`);
+    }
 
     const visited = visitedIds.has(place.id);
 
@@ -198,6 +202,22 @@ function renderList(places) {
         if (a.dataset.type === "google") openMapModal(place);
       });
     });
+
+    const editBtn = card.querySelector(".edit-btn");
+    if (editBtn) {
+      editBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        startEdit(place);
+      });
+    }
+
+    const deleteBtn = card.querySelector(".delete-btn");
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        deletePlace(place);
+      });
+    }
 
     const visitedLabel = card.querySelector(".visited-toggle");
     visitedLabel.addEventListener("click", e => e.stopPropagation());
@@ -259,11 +279,24 @@ function setVisited(id, visited) {
   }).catch(err => console.error("Couldn't save visited status:", err));
 }
 
+function deletePlace(place) {
+  if (typeof db === "undefined") return;
+  const confirmed = confirm(`Delete "${place.name}" permanently? This can't be undone.`);
+  if (!confirmed) return;
+
+  db.collection("places").doc(place.id).delete().catch(err => {
+    console.error("Couldn't delete place:", err);
+    alert("Couldn't delete that — check your connection and try again.");
+  });
+
+  if (editingId === place.id) resetFormToAddMode();
+}
+
 if (typeof db !== "undefined") {
   subscribeWithRetry("shared places", onError => {
     db.collection("places").orderBy("createdAt", "asc").onSnapshot(
       snapshot => {
-        communityPlaces = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        communityPlaces = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, source: "firestore" }));
         applyFilter();
       },
       onError
@@ -333,13 +366,55 @@ const lookupBtn = document.getElementById("lookup-btn");
 const lookupStatus = document.getElementById("lookup-status");
 const addResult = document.getElementById("add-result");
 const addResultText = document.getElementById("add-result-text");
-const submitBtn = placeForm.querySelector(".submit-btn");
+const submitBtn = document.getElementById("place-submit-btn");
+const cancelEditBtn = document.getElementById("cancel-edit-btn");
+const formHeading = document.getElementById("place-form-heading");
+const formIntro = document.getElementById("place-form-intro");
+
+let editingId = null;
+
+function resetFormToAddMode() {
+  editingId = null;
+  placeForm.reset();
+  formHeading.textContent = "Add a place";
+  formIntro.textContent = "Fill this in and it saves permanently for both of you — no extra steps.";
+  submitBtn.textContent = "Add to the map";
+  cancelEditBtn.hidden = true;
+  lookupStatus.textContent = "";
+}
+
+function startEdit(place) {
+  editingId = place.id;
+  addPanel.hidden = false;
+  addToggleBtn.setAttribute("aria-expanded", "true");
+  addToggleBtn.textContent = "− Close form";
+
+  placeForm.name.value = place.name;
+  placeForm.category.value = place.category;
+  placeForm.address.value = place.address;
+  placeForm.lat.value = place.lat;
+  placeForm.lng.value = place.lng;
+  placeForm.description.value = place.description || "";
+  placeForm.googleUrl.value = place.googleUrl || "";
+
+  formHeading.textContent = `Editing "${place.name}"`;
+  formIntro.textContent = "Update the details and save — changes are permanent for both of you.";
+  submitBtn.textContent = "Save changes";
+  cancelEditBtn.hidden = false;
+  addResult.hidden = true;
+
+  addPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("f-name").focus();
+}
+
+cancelEditBtn.addEventListener("click", resetFormToAddMode);
 
 addToggleBtn.addEventListener("click", () => {
   const willOpen = addPanel.hidden;
   addPanel.hidden = !willOpen;
   addToggleBtn.setAttribute("aria-expanded", String(willOpen));
   addToggleBtn.textContent = willOpen ? "− Close form" : "+ Add a place";
+  if (!willOpen) resetFormToAddMode();
   if (willOpen) document.getElementById("f-name").focus();
 });
 
@@ -403,7 +478,7 @@ placeForm.addEventListener("submit", async e => {
     return;
   }
 
-  const newPlace = {
+  const placeData = {
     name: placeForm.name.value.trim(),
     category: placeForm.category.value,
     address: placeForm.address.value.trim(),
@@ -413,14 +488,19 @@ placeForm.addEventListener("submit", async e => {
     googleUrl: placeForm.googleUrl.value.trim()
   };
 
+  const isEditing = !!editingId;
   submitBtn.disabled = true;
-  lookupStatus.textContent = "Saving…";
+  lookupStatus.textContent = isEditing ? "Saving changes…" : "Saving…";
 
   try {
-    await db.collection("places").add({
-      ...newPlace,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    if (isEditing) {
+      await db.collection("places").doc(editingId).update(placeData);
+    } else {
+      await db.collection("places").add({
+        ...placeData,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
 
     activeCategory = "all";
     tabButtons.forEach(b => {
@@ -429,13 +509,14 @@ placeForm.addEventListener("submit", async e => {
       b.setAttribute("aria-pressed", String(isAll));
     });
 
-    addResultText.textContent = `${newPlace.name} is on the map now, permanently, for both of you.`;
+    addResultText.textContent = isEditing
+      ? `Saved changes to ${placeData.name}.`
+      : `${placeData.name} is on the map now, permanently, for both of you.`;
     addResult.hidden = false;
-    lookupStatus.textContent = "";
     addResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-    const category = newPlace.category;
-    placeForm.reset();
+    const category = placeData.category;
+    resetFormToAddMode();
     placeForm.category.value = category;
   } catch (err) {
     console.error("Failed to save place:", err);

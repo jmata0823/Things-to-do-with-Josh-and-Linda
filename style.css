@@ -397,17 +397,62 @@ footer {
   background: var(--bg);
 }
 
+.form-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
 .submit-btn {
   background: var(--honey);
   color: var(--text);
   border-color: var(--bark);
-  width: 100%;
-  margin-top: 0.4rem;
+  flex: 1;
   box-shadow: 0 3px 0 var(--bark);
 }
 
 .submit-btn:hover {
   transform: translateY(-1px);
+}
+
+.cancel-edit-btn {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 1.1rem;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Fredoka", sans-serif;
+  background: var(--card-bg);
+  color: var(--muted);
+}
+
+.cancel-edit-btn:hover {
+  background: var(--bg);
+}
+
+.place-card .edit-btn,
+.place-card .delete-btn {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0.4rem 0 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.place-card .edit-btn:hover {
+  color: var(--bark);
+}
+
+.place-card .delete-btn {
+  color: #a13f2b;
+}
+
+.place-card .delete-btn:hover {
+  color: #7a2f20;
 }
 
 .lookup-status {

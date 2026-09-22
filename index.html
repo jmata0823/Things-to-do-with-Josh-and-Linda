@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Quicksand:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=20260917a">
+<link rel="stylesheet" href="style.css?v=20260922b">
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 </head>
@@ -64,8 +64,8 @@
 <p id="filter-status" class="visually-hidden" aria-live="polite"></p>
 
 <section id="add-place-panel" class="add-place-panel" hidden>
-  <h2>Add a place</h2>
-  <p class="add-place-intro">Fill this in and it saves permanently for both of you — no extra steps.</p>
+  <h2 id="place-form-heading">Add a place</h2>
+  <p class="add-place-intro" id="place-form-intro">Fill this in and it saves permanently for both of you — no extra steps.</p>
 
   <form id="place-form" novalidate>
     <div class="field-row">
@@ -107,7 +107,10 @@
       <input id="f-google" name="googleUrl" type="url" placeholder="https://www.google.com/maps/place/...">
     </div>
 
-    <button type="submit" class="submit-btn">Add to the map</button>
+    <div class="form-actions">
+      <button type="submit" class="submit-btn" id="place-submit-btn">Add to the map</button>
+      <button type="button" class="cancel-edit-btn" id="cancel-edit-btn" hidden>Cancel edit</button>
+    </div>
   </form>
 
   <div id="add-result" class="add-result" hidden>
@@ -147,6 +150,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="data.js?v=20260917a"></script>
 <script src="firebase-config.js?v=20260917a"></script>
-<script src="app.js?v=20260922a"></script>
+<script src="app.js?v=20260922c"></script>
 </body>
 </html>
