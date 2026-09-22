@@ -420,7 +420,10 @@ addToggleBtn.addEventListener("click", () => {
 
 function stripUnit(address) {
   return address
-    .replace(/,?\s*\b(ste|suite|unit|apt|apartment|fl|floor|bldg|building|#)\.?\s*#?\s*[\w-]+\b/gi, "")
+    // "#120" style — a bare hash isn't a word character, so \b won't
+    // match right before it; handle it on its own without \b.
+    .replace(/,?\s*#\s*[\w-]+/gi, "")
+    .replace(/,?\s*\b(ste|suite|unit|apt|apartment|fl|floor|bldg|building)\.?\s*#?\s*[\w-]+\b/gi, "")
     .replace(/\s{2,}/g, " ")
     .replace(/\s+,/g, ",")
     .trim();
